@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0d0d0f" />
+  <title>Usage Dashboard</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/static/icon-192.png" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Login gate -->
+  <div id="login" class="login hidden">
+    <form id="login-form" class="login-card">
+      <h1>Usage Dashboard</h1>
+      <p class="muted">Enter the dashboard password.</p>
+      <input id="login-pw" type="password" placeholder="Password" autocomplete="current-password" />
+      <button type="submit">Unlock</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>Usage</h1>
+      </div>
+      <div class="actions">
+        <button id="refresh" class="ghost" title="Refresh now">↻</button>
+        <button id="open-settings" class="ghost" title="Settings">⚙</button>
+      </div>
+    </header>
+
+    <p class="subtitle muted small">All percentages show budget <strong>remaining</strong> — 100% = full, 0% = exhausted.</p>
+
+    <main id="providers" class="providers"></main>
+
+    <section class="trend">
+      <div class="trend-head">
+        <h2>Trend (% used)</h2>
+        <select id="chart-metric"></select>
+      </div>
+      <div class="ranges">
+        <button class="range-btn" data-hours="1">1h</button>
+        <button class="range-btn" data-hours="6">6h</button>
+        <button class="range-btn active" data-hours="24">24h</button>
+        <button class="range-btn" data-hours="168">7d</button>
+        <button class="range-btn" data-hours="720">30d</button>
+      </div>
+      <canvas id="chart" height="160"></canvas>
+    </section>
+
+    <footer class="foot">
+      <span id="last-updated" class="muted"></span>
+      <span id="channels" class="muted"></span>
+    </footer>
+  </div>
+
+  <!-- Settings drawer -->
+  <div id="settings" class="drawer hidden">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2>Settings</h2>
+        <button id="close-settings" class="ghost">✕</button>
+      </div>
+
+      <section class="card">
+        <h3>Claude</h3>
+        <p class="muted small">
+          Paste your <code>sessionKey</code> cookie from claude.ai (starts with
+          <code>sk-ant-sid01-</code>). It is encrypted before storage.
+        </p>
+        <input id="claude-key" type="password" placeholder="sk-ant-sid01-..." />
+        <input id="claude-org" type="text" placeholder="Org ID (optional — auto-detected)" />
+        <div class="row">
+          <button id="save-claude">Validate &amp; Save</button>
+          <button id="clear-claude" class="ghost danger">Remove</button>
+        </div>
+        <p id="claude-status" class="status"></p>
+        <details class="howto">
+          <summary>How to get your sessionKey (~1 min)</summary>
+          <ol class="muted small">
+            <li>On a logged-in <code>claude.ai</code> tab, press <kbd>F12</kbd> to open DevTools.</li>
+            <li>Open the <strong>Application</strong> tab (click <code>»</code> if it's hidden in the overflow).</li>
+            <li>Left sidebar → <strong>Storage → Cookies → https://claude.ai</strong>.</li>
+            <li>Find the row named exactly <code>sessionKey</code> — <em>not</em> <code>sessionKeyLC</code>.</li>
+            <li>Double-click its <strong>Value</strong> and copy it (it starts with <code>sk-ant-sid01-</code>).</li>
+            <li>Paste it in the field above → <strong>Validate &amp; Save</strong>.</li>
+          </ol>
+          <p class="muted small">You'll only redo this when the key expires — the dashboard shows a banner when that happens.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <h3>Codex / ChatGPT</h3>
+        <p class="muted small">
+          Paste the contents of <code>~/.codex/auth.json</code> (recommended — enables
+          auto-refresh so the token never expires). Encrypted before storage.
+        </p>
+        <textarea id="codex-token" rows="4" placeholder='{ "tokens": { "access_token": "...", "refresh_token": "...", "account_id": "..." } }  — or just the access_token'></textarea>
+        <input id="codex-account" type="text" placeholder="Account ID (optional — auto-detected)" />
+        <div class="row">
+          <button id="save-codex">Validate &amp; Save</button>
+          <button id="clear-codex" class="ghost danger">Remove</button>
+        </div>
+        <p id="codex-status" class="status"></p>
+        <details class="howto">
+          <summary>Where to find it (~30s)</summary>
+          <ol class="muted small">
+            <li>Make sure you've run <code>codex login</code> in the Codex CLI at least once.</li>
+            <li>Open <code>~/.codex/auth.json</code> on the machine where Codex is logged in.</li>
+            <li>Copy the <strong>whole file</strong> and paste it above (this includes the
+              <code>refresh_token</code> needed for auto-renew).</li>
+            <li><strong>Validate &amp; Save</strong>. Account ID is read from the token.</li>
+          </ol>
+          <p class="muted small">With the full file, the token auto-renews; with only the
+            access_token you'll re-paste when it expires.</p>
+        </details>
+      </section>
+
+      <section class="card">
+        <h3>Notifications</h3>
+        <p class="muted small">Channels are configured via server <code>.env</code>.</p>
+        <div class="row">
+          <button id="test-notify" class="ghost">Send test notification</button>
+          <button id="send-snapshot" class="ghost">Send usage to phone</button>
+        </div>
+        <p id="notify-status" class="status"></p>
+        <p id="snapshot-status" class="status"></p>
+        <p class="muted small">
+          The "usage to phone" notification carries <strong>↻ Refresh</strong> and
+          <strong>Open</strong> buttons (ntfy). Refresh needs <code>PUBLIC_URL</code> set
+          in <code>.env</code> so your phone can reach the dashboard.
+        </p>
+      </section>
+
+      <button id="logout" class="ghost danger full">Lock dashboard</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

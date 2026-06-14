@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx[http2]==0.28.1
+curl_cffi>=0.7,<0.12
+apscheduler==3.11.0
+cryptography==44.0.0
+python-dotenv==1.0.1

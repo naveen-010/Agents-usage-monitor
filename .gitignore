@@ -1,0 +1,21 @@
+# ---- Secrets & state (NEVER commit) ----
+.env
+.env.*
+!.env.example
+/data/
+/ntfy/
+secret.key
+*.token
+*.db
+*.db-wal
+*.db-shm
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- Misc ----
+data_test/
+.DS_Store

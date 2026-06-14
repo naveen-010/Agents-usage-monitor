@@ -1,0 +1,33 @@
+services:
+  usage-dashboard:
+    build: .
+    container_name: usage-dashboard
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./data:/data
+    ports:
+      # localhost only — nginx (or your reverse proxy) terminates TLS and proxies here.
+      - "127.0.0.1:8090:8000"
+
+  # Optional self-hosted ntfy. Point NTFY_URL at its public subdomain and create a
+  # publish token: `docker exec ntfy ntfy user add dashboard` then `ntfy token add dashboard`.
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    command: serve
+    restart: unless-stopped
+    user: "0"
+    environment:
+      - NTFY_BASE_URL=https://ntfy.example.com   # change to your ntfy subdomain
+      - NTFY_BEHIND_PROXY=true
+      - NTFY_AUTH_FILE=/var/lib/ntfy/auth.db
+      - NTFY_AUTH_DEFAULT_ACCESS=deny-all
+      - NTFY_CACHE_FILE=/var/lib/ntfy/cache.db
+      - NTFY_ATTACHMENT_CACHE_DIR=/var/lib/ntfy/attachments
+    volumes:
+      - ./ntfy:/var/lib/ntfy
+    ports:
+      - "127.0.0.1:8092:80"
