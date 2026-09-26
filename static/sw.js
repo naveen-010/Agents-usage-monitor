@@ -1,6 +1,6 @@
 // Minimal service worker: enables PWA install + offline app shell.
 // Usage data is always fetched fresh from the network (never cached stale).
-const SHELL = "usage-shell-v8";
+const SHELL = "usage-shell-v9";
 const SHELL_FILES = [
   "/",
   "/static/style.css",

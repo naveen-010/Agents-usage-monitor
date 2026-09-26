@@ -86,22 +86,33 @@ async function applyImportedKey(key) {
   loadUsage();
 }
 
+function fmtDuration(seconds) {
+  let remaining = Math.max(0, Math.floor(seconds));
+  const parts = [];
+  for (const [unit, size] of [["w", 604800], ["d", 86400], ["h", 3600], ["m", 60], ["s", 1]]) {
+    const count = Math.floor(remaining / size);
+    if (count) {
+      parts.push(`${count}${unit}`);
+      if (parts.length === 2) break;
+    }
+    remaining %= size;
+  }
+  return parts.join(" ") || "0s";
+}
+
 function fmtReset(iso) {
   if (!iso) return "no reset time";
   const ms = new Date(iso).getTime() - Date.now();
-  if (isNaN(ms)) return "no reset time";
+  if (!Number.isFinite(ms)) return "no reset time";
   if (ms <= 0) return "resetting…";
-  const mins = Math.floor(ms / 60000);
-  const h = Math.floor(mins / 60), m = mins % 60;
-  return h > 0 ? `resets in ${h}h ${m}m` : `resets in ${m}m`;
+  return `resets in ${fmtDuration(Math.ceil(ms / 1000))}`;
 }
 
 function fmtAgo(iso) {
   const ms = Date.now() - new Date(iso).getTime();
-  const s = Math.floor(ms / 1000);
-  if (s < 60) return `${s}s ago`;
-  const m = Math.floor(s / 60);
-  return m < 60 ? `${m}m ago` : `${Math.floor(m / 60)}h ago`;
+  if (!Number.isFinite(ms)) return "unknown";
+  if (ms < 1000) return "just now";
+  return `${fmtDuration(ms / 1000)} ago`;
 }
 
 function renderMetric(m) {
