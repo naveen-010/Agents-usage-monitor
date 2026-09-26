@@ -123,6 +123,25 @@ def _window_metric(key: str, label: str, window: Any) -> Metric | None:
     return Metric(key=key, label=label, utilization=used, resets_at=resets_at)
 
 
+def _window_label(window: Any, fallback: str) -> str:
+    """Name a limit by its duration; either API slot can hold the weekly limit."""
+    if not isinstance(window, dict):
+        return fallback
+    try:
+        seconds = int(window.get("limit_window_seconds"))
+    except (TypeError, ValueError):
+        return fallback
+    if seconds == 5 * 60 * 60:
+        return "Session (5h)"
+    if seconds == 7 * 24 * 60 * 60:
+        return "Weekly"
+    if seconds > 0 and seconds % (24 * 60 * 60) == 0:
+        return f"Limit ({seconds // (24 * 60 * 60)}d)"
+    if seconds > 0 and seconds % (60 * 60) == 0:
+        return f"Limit ({seconds // (60 * 60)}h)"
+    return fallback
+
+
 async def _refresh_access_token(refresh_token: str) -> dict[str, Any] | None:
     """Exchange a refresh_token for a fresh token bundle. Returns the JSON or None."""
     body = {
@@ -247,7 +266,7 @@ class CodexProvider:
             ("primary", "Session (5h)", rl.get("primary_window")),
             ("secondary", "Weekly", rl.get("secondary_window")),
         ):
-            m = _window_metric(key, label, src)
+            m = _window_metric(key, _window_label(src, label), src)
             if m:
                 metrics.append(m)
         cr = data.get("code_review_rate_limit")
